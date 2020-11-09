@@ -2,7 +2,7 @@
 
 apt-get update
 apt-get upgrade -y
-apt-get install -y openjdk-14-jdk apache2 maven python3 build-essential libapache2-mod-proxy-html libxml2-dev certbot python3-certbot-apache
+apt-get install -y openjdk-14-jdk apache2 maven python3 build-essential certbot python3-certbot-apache
 
 # Prepare user for Gazelle Spring Boot server
 useradd -d /home/gazellespring -s /sbin/nologin gazellespring
