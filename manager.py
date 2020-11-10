@@ -141,7 +141,7 @@ class DropletManager(BaseHTTPRequestHandler):
         project_id = data["project"]["id"]
         job_id = next(build["id"] for build in data["builds"] if build["name"]=="deploy")
 
-        doLockedThread(doGazelleUpdate, (project_id, build_id))
+        doLockedThread(doGazelleUpdate, (project_id, job_id))
         self.output(200, "Success!")
 
     def do_GET(self):
