@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from socketserver import ThreadingTCPServer
 from http.server import BaseHTTPRequestHandler
@@ -6,7 +6,7 @@ from os import getenv
 import json
 from threading import Thread, Lock
 import requests
-from subprocess import run
+import subprocess
 import shutil
 import os
 import pwd
@@ -72,7 +72,7 @@ def dowloadGazelle(project_id, job_id):
 
     print("Dowloaded artifacts.zip")
 
-    run(["unzip", "artifacts.zip"])
+    subprocess.run(["unzip", "artifacts.zip"])
 
     os.remove("/home/gazellespring/gazelle-server.jar")
     shutil.move("server/target/gazelle-server-0.1-SNAPSHOT.jar", "/home/gazellespring/gazelle-server.jar")
