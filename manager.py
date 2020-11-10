@@ -13,8 +13,8 @@ import pwd
 
 HOST = getenv("MANAGER_HOST", "")
 PORT = int(getenv("MANAGER_PORT", "8089"))
-STUD_GITLAB_WEBHOOK_TOKEN = getenv("STUD_GITLAB_WEBHOOK_TOKEN", None)
-STUD_GITLAB_ACCESS_TOKEN = getenv("STUD_GITLAB_ACCESS_TOKEN", None)
+STUD_GITLAB_WEBHOOK_TOKEN = getenv("STUD_GITLAB_WEBHOOK_TOKEN")
+STUD_GITLAB_ACCESS_TOKEN = getenv("STUD_GITLAB_ACCESS_TOKEN")
 
 gazelleSpringPID = None
 
@@ -127,6 +127,7 @@ class DropletManager(BaseHTTPRequestHandler):
 
     def update_gazelle(self):
         if self.headers['X-Gitlab-Token'] != STUD_GITLAB_WEBHOOK_TOKEN:
+            print("Ohoh, Got token: ", self.headers['X-Gitlab-Token'])
             return self.output(401, "Invalid token")
         if self.headers['X-Gitlab-Event'] != 'Pipeline Hook':
             return self.output(200, "Nothing to be done")
