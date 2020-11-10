@@ -16,6 +16,8 @@ Copy you authorized key to the new user
 ```
 mkdir /home/haved/.ssh
 cp /root/.ssh/authorized_keys /home/haved/.ssh/
+chown -R haved /home/haved/.ssh
+chmod u=rw,g=r,o=r /home/haved/.ssh/authorized_keys
 ```
 
 Tell SSH to deny password login, and deny root login

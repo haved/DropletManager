@@ -18,19 +18,17 @@ sudo ./install.sh
 
 This will install apache and other dependencies, as well as create sandbox users.
 Apache is used to serve content, but also as a reverse proxy with HTTPS.
+
 To enable HTTPS, run this certbot command (based on [this guide](https://www.digitalocean.com/community/tutorials/how-to-secure-apache-with-let-s-encrypt-on-ubuntu-20-04)).
 ```
 certbot --apache
 ```
+I selected every domain, and enabled HTTPS redirect. This will make a copy of `haved_apache.conf` with ports changed to `443`, and add `RewriteRules`
 
 ## Providing secrets
 
 The manager or other programs may need secrets to run. You can provide them as environment variables
-by pasting them into `secrets.sh` as
-
-```
-export MY_SECRET=THE_SECRET
-```
+by pasting them into `secrets.sh`. See `secrets_template.sh` for what secrets are needed.
 
 ## Running the manager
 
@@ -39,3 +37,6 @@ Run the manager as root (or with sudo)
 . ./secrets.sh
 ./manager.py
 ```
+
+This will start different services, and listen for updates on port 8089.
+Services will be run in their own folders with their own user accounts.
