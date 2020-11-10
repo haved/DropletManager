@@ -60,7 +60,7 @@ def stopGazelleServer():
         return
     print("Stopping gazelle spring server")
     os.kill(gazelleSpringPID, signal.SIGTERM)
-    os.waitpid(gazelleSpringPID)
+    os.waitpid(gazelleSpringPID, 0)
     gazelleSpringPID = None
 
 def dowloadGazelle(project_id, job_id):
