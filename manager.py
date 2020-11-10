@@ -8,7 +8,7 @@ from threading import Thread, Lock
 import requests
 import subprocess
 import shutil
-import os
+import os, signal
 import pwd
 
 HOST = getenv("MANAGER_HOST", "")
@@ -59,7 +59,7 @@ def stopGazelleServer():
     if gazelleSpringPID == None:
         return
     print("Stopping gazelle spring server")
-    os.kill(gazelleSpringPID)
+    os.kill(gazelleSpringPID, signal.SIGTERM)
     os.waitpid(gazelleSpringPID)
     gazelleSpringPID = None
 
