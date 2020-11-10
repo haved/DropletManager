@@ -8,7 +8,7 @@ from threading import Thread, Lock
 import requests
 import subprocess
 import shutil
-import os, signal
+import os, os.path, signal
 import pwd
 
 HOST = getenv("MANAGER_HOST", "")
@@ -78,11 +78,16 @@ def downloadGazelle(project_id, job_id):
 
     subprocess.run(["unzip", "artifacts.zip"])
 
-    os.remove("/home/gazellespring/gazelle-server.jar")
+    if os.path.isfile("/home/gazellespring/gazelle-server.jar"):
+        os.remove("/home/gazellespring/gazelle-server.jar")
     shutil.move("server/target/gazelle-server-0.1-SNAPSHOT.jar", "/home/gazellespring/gazelle-server.jar")
 
-    shutil.rmtree("/var/www/html/gazelle")
+
+    if os.path.isdir("/var/www/html/gazelle"):
+        shutil.rmtree("/var/www/html/gazelle")
     os.rename("gazelle/dist", "/var/www/html/gazelle")
+
+    os.remove("artifacts.zip")
 
     print("Moved files to correct places")
 
