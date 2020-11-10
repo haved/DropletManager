@@ -16,6 +16,10 @@ PORT = int(getenv("MANAGER_PORT", "8089"))
 STUD_GITLAB_WEBHOOK_TOKEN = getenv("STUD_GITLAB_WEBHOOK_TOKEN")
 STUD_GITLAB_ACCESS_TOKEN = getenv("STUD_GITLAB_ACCESS_TOKEN")
 
+if STUD_GITLAB_WEBHOOK_TOKEN == None or STUD_GITLAB_ACCESS_TOKEN == None:
+    print("Missing some environment variables!")
+    exit(1)
+
 gazelleSpringPID = None
 
 def makeStatusPage():
