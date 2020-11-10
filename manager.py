@@ -78,7 +78,7 @@ def dowloadGazelle(project_id, job_id):
     shutil.move("server/target/gazelle-server-0.1-SNAPSHOT.jar", "/home/gazellespring/gazelle-server.jar")
 
     shutil.rmtree("/var/www/html/gazelle")
-    os.rename("gazelle/public", "/var/www/html/gazelle")
+    os.rename("gazelle/dist", "/var/www/html/gazelle")
 
     print("Moved files to correct places")
 
