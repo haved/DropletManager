@@ -6,6 +6,10 @@ from os import getenv
 import json
 from threading import Thread, Lock
 import requests
+from subprocess import run
+import shutil
+import os
+import pwd
 
 HOST = getenv("MANAGER_HOST", "")
 PORT = int(getenv("MANAGER_PORT", "8089"))
@@ -20,21 +24,73 @@ def makeStatusPage():
 mutex = Lock()
 
 def startGazelleServer():
+    global gazelleSpringPID
+    stopGazelleServer()
+
     print("Starting gazelle spring server")
+    user_name = "gazellespring"
+    cwd = "/home/gazellespring"
+    pw_record = pwd.getpwnam(user_name)
+    user_name      = pw_record.pw_name
+    user_home_dir  = pw_record.pw_dir
+    user_uid       = pw_record.pw_uid
+    user_gid       = pw_record.pw_gid
+    env = os.environ.copy()
+    env[ 'HOME'     ]  = user_home_dir
+    env[ 'LOGNAME'  ]  = user_name
+    env[ 'PWD'      ]  = cwd
+    env[ 'USER'     ]  = user_name
+
+    def demote():
+        os.setgid(user_gid)
+        os.setuid(user_uid)
+
+    process = subprocess.Popen(
+        ["java", "-jar", "gazelle-server.jar"], preexec_fn=demote, cwd=cwd, env=env
+    )
+    gazelleSpringPID = process.pid
 
 def stopGazelleServer():
+    global gazelleSpringPID
     if gazelleSpringPID == None:
         return
     print("Stopping gazelle spring server")
+    os.kill(gazelleSpringPID)
+    os.waitpid(gazelleSpringPID)
+    gazelleSpringPID = None
 
-def dowloadGazelle():
+def dowloadGazelle(project_id, job_id):
     print("Downloading gazelle server and site")
 
-def doGazelleUpdate():
+    url = f"https://gitlab.stud.idi.ntnu.no/api/v4/projects/{project_id}/jobs/{job_id}/artifacts"
+    headers={"PRIVATE-TOKEN": STUD_GITLAB_ACCESS_TOKEN}
+    with requests.get(url, stream=True, allow_redirects=True, headers=headers) as r:
+        r.raise_for_status()
+        with open("artifacts.zip", "wb") as o:
+            for chunk in r.iter_content(chunk_size=8192):
+                o.write(chunk)
+
+    print("Dowloaded artifacts.zip")
+
+    run(["unzip", "artifacts.zip"])
+
+    os.remove("/home/gazellespring/gazelle-server.jar")
+    shutil.move("server/target/gazelle-server-0.1-SNAPSHOT.jar", "/home/gazellespring/gazelle-server.jar")
+
+    shutil.rmtree("/var/www/html/gazelle")
+    os.rename("gazelle/public", "/var/www/html/gazelle")
+
+    print("Moved files to correct places")
+
+
+def doGazelleUpdate(project_id, job_id):
     stopGazelleServer()
     print("Updating gazelle server")
 
-    startGazelleServer()
+    try:
+        downloadGazelle(project_id, job_id)
+    finally:
+        startGazelleServer()
 
 def doLockedThread(func, args=()):
     def wrapper(func,args):
@@ -76,12 +132,15 @@ class DropletManager(BaseHTTPRequestHandler):
             return self.output(200, "Nothing to be done")
 
         data = self.read_data()
-        print("Debug:", data)
-        print("Also debug:", json.dumps(data))
         if data["object_attributes"]["status"] != "success":
             return self.output(200, "Not a pipeline success")
+        if data["object_attributes"]["ref"] != "master":
+            return self.output(200, "Not on master branch")
 
-        doLockedThread(doGazelleUpdate)
+        project_id = data["project"]["id"]
+        job_id = next(build["id"] for build in data["builds"] if build["name"]=="deploy")
+
+        doLockedThread(doGazelleUpdate, (project_id, build_id))
         self.output(200, "Success!")
 
     def do_GET(self):
@@ -102,6 +161,8 @@ def main():
 
     print("Welcome to the droplet manager!")
     print("Doing startup actions: ")
+
+    startGazelleServer()
 
     with ThreadingTCPServer((HOST, PORT), DropletManager) as httpd:
         print("Serving manager on port", PORT)
