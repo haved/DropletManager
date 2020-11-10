@@ -63,7 +63,7 @@ def stopGazelleServer():
     os.waitpid(gazelleSpringPID, 0)
     gazelleSpringPID = None
 
-def dowloadGazelle(project_id, job_id):
+def downloadGazelle(project_id, job_id):
     print("Downloading gazelle server and site")
 
     url = f"https://gitlab.stud.idi.ntnu.no/api/v4/projects/{project_id}/jobs/{job_id}/artifacts"
