@@ -20,20 +20,21 @@ if STUD_GITLAB_WEBHOOK_TOKEN == None or STUD_GITLAB_ACCESS_TOKEN == None:
     print("Missing some environment variables!")
     exit(1)
 
+GAZELLESPRING_USER = "gazellespring"
+GAZELLESPRING_HOME_DIR = "/home/gazellespring"
+GAZELLESPRING_JAR = "gazelle-server.jar"
+GAZELLE_WWW_DIR = "/var/www/html/gazelle"
+
+GAZELLE_GITLAB_ARTIFACT_URL = "https://gitlab.stud.idi.ntnu.no/api/v4/projects/{project_id}/jobs/{job_id}/artifacts"
+ARTIFACT_GAZELLE_JAR_NAME = "server/target/gazelle-server-0.1-SNAPSHOT.jar"
+ARTIFACT_GAZELLE_WWW_DIR = "gazelle/dist"
+
 gazelleSpringPID = None
 
 def makeStatusPage():
     return "Status page!"
 
-mutex = Lock()
-
-def startGazelleServer():
-    global gazelleSpringPID
-    stopGazelleServer()
-
-    print("Starting gazelle spring server")
-    user_name = "gazellespring"
-    cwd = "/home/gazellespring"
+def runAsUser(command, user_name, cwd):
     pw_record = pwd.getpwnam(user_name)
     user_name      = pw_record.pw_name
     user_home_dir  = pw_record.pw_dir
@@ -50,47 +51,75 @@ def startGazelleServer():
         os.setuid(user_uid)
 
     process = subprocess.Popen(
-        ["java", "-jar", "gazelle-server.jar"], preexec_fn=demote, cwd=cwd, env=env
+        command, preexec_fn=demote, cwd=cwd, env=env
     )
-    gazelleSpringPID = process.pid
+    return process.pid
+
+# Kills gracefully
+def killAndWait(pid):
+    os.kill(pid, signal.SIGTERM)
+    os.waitpid(pid, 0)
+
+def downloadGitlabArtifacts(project_id, job_id, target_file):
+    url = GAZELLE_GITLAB_ARTIFACT_URL.format(project_id=project_id, job_id=job_id)
+    headers={"PRIVATE-TOKEN": STUD_GITLAB_ACCESS_TOKEN}
+    with requests.get(url, stream=True, allow_redirects=True, headers=headers) as r:
+        r.raise_for_status()
+        with open(target_file, "wb") as o:
+            for chunk in r.iter_content(chunk_size=8192):
+                o.write(chunk)
+
+def unzip(filename, target_dir):
+    os.rmtree(target_dir, ignore_errors=True)
+    subprocess.run(["unzip", filename, "-d", target_dir])
+    os.remove(filename)
+
+def moveFile(fro, to):
+    if os.path.isfile(to):
+        os.remove(to)
+    dirname = os.path.dirname(to)
+    if not os.path.isdir(dirname):
+        os.makedirs(dirname)
+    shutils.move(fro, to)
+
+#fro is a directory, to is the new name/location of the directory
+def moveDir(fro, to):
+    if os.path.isdir(to):
+        shutil.rmtree(to)
+    os.rename(fro, to)
+
+def downloadGazelle(project_id, job_id):
+    print("Downloading gazelle server and site")
+
+    ARTIFACT_ZIP = "artifacts.zip"
+    ARTIFACT_DIR = "artifacts"
+    downloadGitlabArtifacts(project_id, job_id, )
+    print(f"Dowloaded {ARTIFACT_ZIP}")
+
+    unzip(ARTIFACT_ZIP, ARTIFACT_DIR)
+
+    artifact = lambda name: os.path.join(ARTIFACT_DIR, name)
+    moveFile(artifact(ARTIFACT_GAZELLE_JAR_NAME), os.path.join(GAZELLESPRING_HOME_DIR, GAZELLESPRING_JAR))
+    moveDir(artifact(ARTIFACT_GAZELLE_WWW_DIR), GAZELLE_WWW_DIR)
+
+    print("Moved files to correct places")
+
+def startGazelleServer():
+    global gazelleSpringPID
+    stopGazelleServer()
+
+    print("Starting gazelle spring server")
+
+    command = ["java", "-jar", GAZELLESPRING_JAR]
+    gazelleSpringPID = runAsUser(command, GAZELLESPRING_USER, GAZELLESPRING_HOME_DIR)
 
 def stopGazelleServer():
     global gazelleSpringPID
     if gazelleSpringPID == None:
         return
     print("Stopping gazelle spring server")
-    os.kill(gazelleSpringPID, signal.SIGTERM)
-    os.waitpid(gazelleSpringPID, 0)
+    killAndWait(gazelleSpringPID)
     gazelleSpringPID = None
-
-def downloadGazelle(project_id, job_id):
-    print("Downloading gazelle server and site")
-
-    url = f"https://gitlab.stud.idi.ntnu.no/api/v4/projects/{project_id}/jobs/{job_id}/artifacts"
-    headers={"PRIVATE-TOKEN": STUD_GITLAB_ACCESS_TOKEN}
-    with requests.get(url, stream=True, allow_redirects=True, headers=headers) as r:
-        r.raise_for_status()
-        with open("artifacts.zip", "wb") as o:
-            for chunk in r.iter_content(chunk_size=8192):
-                o.write(chunk)
-
-    print("Dowloaded artifacts.zip")
-
-    os.rmtree("artifacts", ignore_errors=True)
-    subprocess.run(["unzip", "artifacts.zip", "-d", "artifacts"])
-    os.remove("artifacts.zip")
-
-    if os.path.isfile("/home/gazellespring/gazelle-server.jar"):
-        os.remove("/home/gazellespring/gazelle-server.jar")
-    shutil.move("artifacts/server/target/gazelle-server-0.1-SNAPSHOT.jar", "/home/gazellespring/gazelle-server.jar")
-
-
-    if os.path.isdir("/var/www/html/gazelle"):
-        shutil.rmtree("/var/www/html/gazelle")
-    os.rename("artifacts/gazelle/dist", "/var/www/html/gazelle")
-
-    print("Moved files to correct places")
-
 
 def doGazelleUpdate(project_id, job_id):
     stopGazelleServer()
@@ -101,6 +130,7 @@ def doGazelleUpdate(project_id, job_id):
     finally:
         startGazelleServer()
 
+lock = Mutex()
 def doLockedThread(func, args=()):
     def wrapper(func,args):
         try:

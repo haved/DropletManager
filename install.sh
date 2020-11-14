@@ -2,7 +2,7 @@
 
 apt-get update
 apt-get upgrade -y
-apt-get install -y openjdk-14-jdk apache2 maven python3 certbot python3-certbot-apache
+apt-get install -y openjdk-14-jdk apache2 maven python3 certbot python3-certbot-apache tmux
 #build-essential
 
 # Setting up reverse proxy
