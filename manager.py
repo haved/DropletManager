@@ -133,7 +133,7 @@ def doGazelleUpdate(project_id, job_id):
     finally:
         startGazelleServer()
 
-lock = Mutex()
+lock = Lock()
 def doLockedThread(func, args=()):
     def wrapper(func,args):
         try:

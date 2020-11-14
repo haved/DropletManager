@@ -33,7 +33,7 @@ by pasting them into `secrets.sh`. See `secrets_template.sh` for what secrets ar
 ## Setting up autostart
 Copy the file `manager.service` to systemd. Make sure the path inside matches where you cloned git!
 ```
-cp manager.service /etc/systemd/system/
+sudo cp manager.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable manager.service
 ```
