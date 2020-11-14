@@ -30,13 +30,17 @@ I selected every domain, and enabled HTTPS redirect. This will make a copy of `h
 The manager or other programs may need secrets to run. You can provide them as environment variables
 by pasting them into `secrets.sh`. See `secrets_template.sh` for what secrets are needed.
 
-## Running the manager
-
-Run the manager as root (or with sudo)
+## Setting up autostart
+Copy the file `manager.service` to systemd. Make sure the path inside matches where you cloned git!
 ```
-. ./secrets.sh
-./manager.py
+cp manager.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable manager.service
 ```
 
-This will start different services, and listen for updates on port 8089.
-Services will be run in their own folders with their own user accounts.
+## Attaching to the terminal
+The manager is run inside a tmux session
+```
+tmux attach -t manager
+```
+Use `Ctrl-B` `D` to leave

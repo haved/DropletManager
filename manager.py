@@ -82,8 +82,11 @@ def moveFile(fro, to):
         os.makedirs(dirname)
     shutils.move(fro, to)
 
-#fro is a directory, to is the new name/location of the directory
+#fro is a directory, to is the new name/location of the directory (without trailing /)
 def moveDir(fro, to):
+    dirname = os.path.dirname(to)
+    if not os.path.isdir(dirname):
+        os.makedirs(dirname)
     if os.path.isdir(to):
         shutil.rmtree(to)
     os.rename(fro, to)
