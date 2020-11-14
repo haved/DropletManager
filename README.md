@@ -32,15 +32,18 @@ by pasting them into `secrets.sh`. See `secrets_template.sh` for what secrets ar
 
 ## Setting up autostart
 Copy the file `manager.service` to systemd. Make sure the path inside matches where you cloned git!
+This will lanuch `autostart.sh` on bootup, which in turn will start a detached tmux session with the manager.
+The systemd service also supports stopping / restarting the tmux session.
 ```
 sudo cp manager.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable manager.service
+sudo systemctl start manager.service
 ```
 
 ## Attaching to the terminal
-The manager is run inside a tmux session
+The manager is run inside a tmux session with root privileges.
 ```
-tmux attach -t manager
+sudo tmux attach -t manager
 ```
 Use `Ctrl-B` `D` to leave
