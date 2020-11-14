@@ -76,18 +76,18 @@ def downloadGazelle(project_id, job_id):
 
     print("Dowloaded artifacts.zip")
 
-    subprocess.run(["unzip", "artifacts.zip"])
+    os.rmtree("artifacts", ignore_errors=True)
+    subprocess.run(["unzip", "artifacts.zip", "-d", "artifacts"])
+    os.remove("artifacts.zip")
 
     if os.path.isfile("/home/gazellespring/gazelle-server.jar"):
         os.remove("/home/gazellespring/gazelle-server.jar")
-    shutil.move("server/target/gazelle-server-0.1-SNAPSHOT.jar", "/home/gazellespring/gazelle-server.jar")
+    shutil.move("artifacts/server/target/gazelle-server-0.1-SNAPSHOT.jar", "/home/gazellespring/gazelle-server.jar")
 
 
     if os.path.isdir("/var/www/html/gazelle"):
         shutil.rmtree("/var/www/html/gazelle")
-    os.rename("gazelle/dist", "/var/www/html/gazelle")
-
-    os.remove("artifacts.zip")
+    os.rename("artifacts/gazelle/dist", "/var/www/html/gazelle")
 
     print("Moved files to correct places")
 
