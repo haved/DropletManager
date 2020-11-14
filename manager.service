@@ -3,6 +3,8 @@ After=network.service
 
 [Service]
 ExecStart=/home/haved/DropletManager/autostart.sh
+RemainAfterExit=true
+ExecStop=tmux kill-session -t manage
 
 [Install]
 WantedBy=default.target
