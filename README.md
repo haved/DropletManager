@@ -47,3 +47,10 @@ The manager is run inside a tmux session with root privileges.
 sudo tmux attach -t manager
 ```
 Use `Ctrl-B` `D` to leave
+
+## Periodic reboots
+Use `sudo crontab -e` to add the line
+```
+0 4   *   *   *    /sbin/shutdown -r +5
+```
+This will be called at 4:00 every day
