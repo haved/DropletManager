@@ -96,7 +96,7 @@ def downloadGazelle(project_id, job_id):
 
     ARTIFACT_ZIP = "artifacts.zip"
     ARTIFACT_DIR = "artifacts"
-    downloadGitlabArtifacts(project_id, job_id, )
+    downloadGitlabArtifacts(project_id, job_id, ARTIFACT_ZIP)
     print(f"Dowloaded {ARTIFACT_ZIP}")
 
     unzip(ARTIFACT_ZIP, ARTIFACT_DIR)
