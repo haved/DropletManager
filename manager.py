@@ -137,10 +137,10 @@ lock = Lock()
 def doLockedThread(func, args=()):
     def wrapper(func,args):
         try:
-            mutex.acquire()
+            lock.acquire()
             func(*args)
         finally:
-            mutex.release()
+            lock.release()
     Thread(target=wrapper, args=(func,args)).start()
 
 class DropletManager(BaseHTTPRequestHandler):
