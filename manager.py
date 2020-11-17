@@ -34,8 +34,8 @@ gazelleSpringPID = None
 gazelleStatus = "Running"
 
 def makeStatusPage():
-    result = "Status page! \r\n"
-    result += f"Gazelle Status: {gazelleStatus} \r\n"
+    result = "Status page! <br>"
+    result += f"Gazelle Status: {gazelleStatus}"
     return result
 
 def runAsUser(command, user_name, cwd):
