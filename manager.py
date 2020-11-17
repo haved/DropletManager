@@ -10,6 +10,7 @@ import subprocess
 import shutil
 import os, os.path, signal
 import pwd
+from datetime import datetime
 
 HOST = getenv("MANAGER_HOST", "")
 PORT = int(getenv("MANAGER_PORT", "8089"))
@@ -30,9 +31,12 @@ ARTIFACT_GAZELLE_JAR_NAME = "server/target/gazelle-server-0.1-SNAPSHOT.jar"
 ARTIFACT_GAZELLE_WWW_DIR = "gazelle/dist"
 
 gazelleSpringPID = None
+gazelleStatus = "Running"
 
 def makeStatusPage():
-    return "Status page!"
+    result = "Status page! \r\n"
+    result += f"Gazelle Status: {gazelleStatus} \r\n"
+    return result
 
 def runAsUser(command, user_name, cwd):
     pw_record = pwd.getpwnam(user_name)
@@ -70,7 +74,7 @@ def downloadGitlabArtifacts(project_id, job_id, target_file):
                 o.write(chunk)
 
 def unzip(filename, target_dir):
-    os.rmtree(target_dir, ignore_errors=True)
+    shutil.rmtree(target_dir, ignore_errors=True)
     subprocess.run(["unzip", filename, "-d", target_dir])
     os.remove(filename)
 
@@ -125,11 +129,17 @@ def stopGazelleServer():
     gazelleSpringPID = None
 
 def doGazelleUpdate(project_id, job_id):
+    global gazelleStatus
     stopGazelleServer()
     print("Updating gazelle server")
 
+    timestamp = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
     try:
+        gazelleStatus = "updating"
         downloadGazelle(project_id, job_id)
+        gazelleStatus = "last updated at " + timestamp
+    except:
+        gazelleStatus = "update failed " + timestamp
     finally:
         startGazelleServer()
 
