@@ -84,7 +84,7 @@ def moveFile(fro, to):
     dirname = os.path.dirname(to)
     if not os.path.isdir(dirname):
         os.makedirs(dirname)
-    shutils.move(fro, to)
+    shutil.move(fro, to)
 
 #fro is a directory, to is the new name/location of the directory (without trailing /)
 def moveDir(fro, to):
@@ -138,9 +138,9 @@ def doGazelleUpdate(project_id, job_id):
         gazelleStatus = "updating"
         downloadGazelle(project_id, job_id)
         gazelleStatus = "last updated at " + timestamp
-    except(e):
+    except:
         gazelleStatus = "update failed " + timestamp
-        raise e
+        raise
     finally:
         startGazelleServer()
 
