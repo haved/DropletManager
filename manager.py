@@ -138,8 +138,9 @@ def doGazelleUpdate(project_id, job_id):
         gazelleStatus = "updating"
         downloadGazelle(project_id, job_id)
         gazelleStatus = "last updated at " + timestamp
-    except:
+    except(e):
         gazelleStatus = "update failed " + timestamp
+        raise e
     finally:
         startGazelleServer()
 
