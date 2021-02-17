@@ -25,6 +25,13 @@ certbot --apache
 ```
 I selected every domain, and enabled HTTPS redirect. This will make a copy of `haved_apache.conf` with ports changed to `443`, and add `RewriteRules`
 
+## Ports used
+ - 80 Apache HTTP
+ - 443 Apache HTTPS
+ - 8088 Gazelle Spring Boot
+ - 8089 Management script
+ - 8180 Spiis Spring Boot
+
 ## Providing secrets
 
 The manager or other programs may need secrets to run. You can provide them as environment variables

@@ -33,9 +33,22 @@ ARTIFACT_GAZELLE_WWW_DIR = "gazelle/dist"
 gazelleSpringPID = None
 gazelleStatus = "Running"
 
+SPIISSPRING_USER = "spiisspring"
+SPIISSPRING_HOME_DIR = "/home/spiisspring"
+SPIISSPRING_JAR = "spiis-server.jar"
+SPIIS_WWW_DIR = "/var/www/html/spiis"
+
+SPIIS_GITLAB_ARTIFACT_URL = "https://gitlab.stud.idi.ntnu.no/api/v4/projects/{project_id}/jobs/{job_id}/artifacts"
+ARTIFACT_SPIIS_JAR_NAME = "server/target/spiis-server-0.0.1-SNAPSHOT.jar"
+ARTIFACT_SPIIS_WWW_DIR = "client/dist"
+
+spiisSpringPID = None
+spiisStatus = "Running"
+
 def makeStatusPage():
     result = "Status page! <br>"
-    result += f"Gazelle Status: {gazelleStatus}"
+    result += f"Gazelle Status: {gazelleStatus} <br>"
+    result += f"Spiis Status: {spiisStatus} <br>"
     return result
 
 def runAsUser(command, user_name, cwd):
@@ -144,6 +157,56 @@ def doGazelleUpdate(project_id, job_id):
     finally:
         startGazelleServer()
 
+def downloadSpiis(project_id, job_id):
+    print("Downloading spiis server and site")
+
+    ARTIFACT_ZIP = "artifacts.zip"
+    ARTIFACT_DIR = "artifacts"
+    downloadGitlabArtifacts(project_id, job_id, ARTIFACT_ZIP)
+    print(f"Dowloaded {ARTIFACT_ZIP}")
+
+    unzip(ARTIFACT_ZIP, ARTIFACT_DIR)
+
+    artifact = lambda name: os.path.join(ARTIFACT_DIR, name)
+    moveFile(artifact(ARTIFACT_SPIIS_JAR_NAME), os.path.join(SPIISSPRING_HOME_DIR, SPIISSPRING_JAR))
+    moveDir(artifact(ARTIFACT_SPIIS_WWW_DIR), SPIIS_WWW_DIR)
+
+    print("Moved files to correct places")
+
+def startSpiisServer():
+    global spiisSpringPID
+    stopSpiisServer()
+
+    print("Starting spiis spring server")
+
+    command = ["java", "-jar", SPIISSPRING_JAR]
+    spiisSpringPID = runAsUser(command, SPIISSPRING_USER, SPIISSPRING_HOME_DIR)
+
+def stopSpiisServer():
+    global spiisSpringPID
+    if spiisSpringPID == None:
+        return
+    print("Stopping spiis spring server")
+    killAndWait(spiisSpringPID)
+    spiisSpringPID = None
+
+def doSpiisUpdate(project_id, job_id):
+    global spiisStatus
+    stopSpiisServer()
+    print("Updating spiis server")
+
+    timestamp = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+    try:
+        spiisStatus = "updating"
+        downloadSpiis(project_id, job_id)
+        spiisStatus = "last updated at " + timestamp
+    except:
+        spiisStatus = "update failed " + timestamp
+        raise
+    finally:
+        startSpiisServer()
+
+
 lock = Lock()
 def doLockedThread(func, args=()):
     def wrapper(func,args):
@@ -197,6 +260,25 @@ class DropletManager(BaseHTTPRequestHandler):
         doLockedThread(doGazelleUpdate, (project_id, job_id))
         self.output(200, "Success!")
 
+    def update_spiis(self):
+        if self.headers['X-Gitlab-Token'] != STUD_GITLAB_WEBHOOK_TOKEN:
+            print("Ohoh, Got token: ", self.headers['X-Gitlab-Token'])
+            return self.output(401, "Invalid token")
+        if self.headers['X-Gitlab-Event'] != 'Pipeline Hook':
+            return self.output(200, "Nothing to be done")
+
+        data = self.read_data()
+        if data["object_attributes"]["status"] != "success":
+            return self.output(200, "Not a pipeline success")
+        if data["object_attributes"]["ref"] != "master":
+            return self.output(200, "Not on master branch")
+
+        project_id = data["project"]["id"]
+        job_id = next(build["id"] for build in data["builds"] if build["name"]=="deploy")
+
+        doLockedThread(doSpiisUpdate, (project_id, job_id))
+        self.output(200, "Success!")
+
     def do_GET(self):
         self.protocol_version = "HTTP/1.1"
         if self.path == "/" or self.path == "/index.html":
@@ -208,6 +290,8 @@ class DropletManager(BaseHTTPRequestHandler):
         self.protocol_version="HTTP/1.1"
         if self.path == "/new_gazelle":
             self.update_gazelle()
+        elif self.path == "/new_spiis":
+            self.update_spiis()
         else:
             self.output_404()
 
@@ -217,6 +301,7 @@ def main():
     print("Doing startup actions: ")
 
     startGazelleServer()
+    startSpiisServer()
 
     with ThreadingTCPServer((HOST, PORT), DropletManager) as httpd:
         print("Serving manager on port", PORT)

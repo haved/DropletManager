@@ -42,5 +42,14 @@ chmod 700 /home/gazellespring
 mkdir /var/www/html/gazelle
 
 
+# Prepare user for Spiis Spring Boot server
+useradd -d /home/spiisspring -s /sbin/nologin spiisspring
+mkdir /home/spiisspring
+chown spiisspring /home/spiisspring
+chmod 700 /home/spiisspring
+
+# Preparing folder for spiis webapp
+mkdir /var/www/html/spiis
+
 # Finally, start apache
 systemctl start apache2
